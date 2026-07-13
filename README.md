@@ -1,5 +1,5 @@
 <div align="center">
-    <h1>Beyond-Frontiers: Scene-Anomaly Guided Autonomous Navigation<br>
+    <h1>Beyond-Frontiers: Scene-Anomaly Guided Autonomous Exploration<br>
         <span style="font-size:0.6em;">IROS 2026</span>
     </h1>
     <p style="font-size:1.2em;">
