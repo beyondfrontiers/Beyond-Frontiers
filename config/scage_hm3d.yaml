@@ -1,0 +1,102 @@
+# SCAGE on HM3D scene 00876-mv2HUxq3B53.
+
+# ------ Targets (scage/manager.py) ------
+filter_bbox: [-11, 10, -16, 4, 0.4, 1.8]    # targets outside this box are dropped (x_min, x_max, y_min, y_max, z_min, z_max) needs adjustment per scene
+filter_max_vd_z: 0.65                         # max |z| of the unit viewing direction
+filter_min_gain: 1                            # minimum expected gain g(T) in m^3
+visited_trans_threshold: 0.5                  # a target this close to a visited pose ...
+visited_angle_threshold: 0.4                  # ... and this well aligned with it counts as visited
+visited_gain_reduction_factor: 2000
+
+# gain g(T) is rendered with the robot camera's own 77.32 deg FOV, out to the sensor range
+render_K: [80.0, 0.0, 64.0, 0.0, 80.0, 64.0, 0.0, 0.0, 1.0]
+render_H: 128
+render_W: 128
+render_depth_range: 8.0
+
+# ------ Mapping (navigation map: Wavemap) ------
+voxel_size: 0.1         # Wavemap resolution in metres
+depth_range: 8.0        # sensor max range, both maps
+
+# ------ Planning ------
+bounds: [-11, 10, -16, 4, 0.4, 1.8]
+min_dist2occ: 0.2                         # a pose this close to an obstacle is unsafe
+max_planning_time: 1.5
+planning_algo: rrtstar
+
+# ------ Exploration App ------
+# Exploration stops when no valid target is left even after a full turn in place.
+predict_interval: 6                   # re-score anomalies every N steps while travelling
+initial_cam_extrinsic:
+  - [-0.76604444, -0.64278761, -0.0,          0.29643052]
+  - [ 0.0,          0.0,         -1.0,          1.0     ]
+  - [ 0.64278761, -0.76604444, -0.0,          0.27904303]
+  - [ 0.0,          0.0,          0.0,          1.0     ]
+observer_cam_extrinsic:
+  - [-2.19651623e-03, -9.99937606e-01, -1.09525786e-02, -7.20345647e+00]
+  - [-9.99869439e-01,  2.02076514e-03,  1.60318772e-02,  6.75098675e-01]
+  - [-1.60087443e-02,  1.09863629e-02, -9.99811492e-01,  2.16745306e+01]
+  - [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]
+
+# ------ SCAGE ------
+scage:
+  # Delta-Net map
+  cloud_voxel: 0.05         # the grid Delta-Net was trained at; do not change
+  min_range: 0.1
+  max_range: 8.0            # z-depth cap for points entering the cloud
+
+  # scoring
+  overlap: 3.0              # how many times over the patches tile the cloud
+  batch: 12                 # patches per forward pass; lower it if the GPU runs out
+  agg: mean                 # mean | max over overlapping patches (paper: max; README: mean)
+  score_norm: none          # none | minmax (paper Eq. 2)
+  tau: 0.25                 # anomaly threshold on the score (paper: 0.5 after minmax)
+  incremental: false        # re-score only around newly added points
+  incremental_radius: 2.0   # ... within this distance of them (the patch radius)
+
+  # clustering
+  cluster_radius: 0.15      # ball-query radius linking anomalous points
+  min_cluster_pts: 30
+
+  # viewpoints
+  normal_k: 150             # map points around a cluster anchor used for its surface normal
+  d_min: 1.0                # safety floor on the standoff distance (Eq. 3)
+  d_max: 4.0                # clusters needing more standoff than this are split
+  target_clearance: 0.3     # a target keeps this far from obstacles (paths: min_dist2occ),
+                            # and a ball this size around it must be known free
+  surface_obstacles: true   # observed surface points count as obstacles for the planner; a surface seen
+                            # once is not yet "occupied" in Wavemap (needs >0.6 log-odds, one frame gives 0.4)
+
+  # flight space: a UAV - it may hover over furniture, but must stay inside the building
+  indoor: true              # positions must be under an observed ceiling (scage/space.py)
+  roof_nz: 0.8              # a point above the flight band whose normal has z < -roof_nz is ceiling
+  roof_close: 0.6           # ceiling gaps narrower than twice this are closed (doorways, lintels)
+  sky_z: 3.3                # above every ceiling: a no-return ray up here is under open sky, and
+                            # unseen patches it crosses (courtyards) are not roofed over
+  trail_radius: 0.3         # where the robot has been counts as roofed
+  geo_step: 0.2             # travel-distance graph spacing
+  motion_check_step: 0.05   # RRT* edges, grid paths and executed steps are checked this often (m)
+
+  # selection
+  gain_voxel: 0.2           # grid for counting the volume a target would see
+  gain_bbox: [-11, 10, -16, 4, -0.2, 3.3]   # unknown volume counts only inside the building
+  eps_dist: 2.0             # floor on travel distance in u = g*S / max(d, eps) (Eq. 4): views
+                            # within 2 m compete on g*S alone, so the robot does not inch from
+                            # one nearby view to the next, turning on the spot in between
+  see_range: 5.0            # anomalous points farther than this from a view are not covered by it
+  probe_dist: 0.25          # a view covers an anomalous point only if it also sees this far past it
+                            # along Delta-Net's bearing, into the unobserved space
+  look_decay: 0.5           # weight per frame that already saw a point and past it, yet it stayed
+                            # anomalous: a physical edge Delta-Net cannot tell from a gap
+  vis_tol: 0.2              # depth slack when testing a point against the obstacle render
+  min_mass: 0.02            # m^2 of (score-weighted) anomalous surface a view must cover
+  group_trans: 0.75         # views closer than this ...
+  group_angle: 0.52         # ... and within this angle (30 deg) are clubbed into one
+  tour_len: 3               # stops picked by set cover each Delta-Net run
+
+  # execution
+  keep_frac: 0.3            # a committed stop is dropped once it sees < this share of its anomaly mass
+  max_rejects: 3            # unsafe-step replans to one goal before it is blacklisted
+  idle_limit: 6             # loop iterations without moving before the goal is blacklisted
+  trans_step: 0.6           # path poses every 0.6 m / 0.5 rad (FrontierNet: 0.3 / 0.3)
+  rot_step: 0.5

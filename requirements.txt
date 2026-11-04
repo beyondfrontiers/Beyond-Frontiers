@@ -1,0 +1,18 @@
+# Install torch 2.5.1 (CUDA 12.4) first, see README.md
+
+# Delta-Net
+--find-links https://data.pyg.org/whl/torch-2.5.1+cu124.html
+torch_scatter
+spconv-cu124
+addict
+timm==0.9.2
+
+# simulator, mapping, planning (as in FrontierNet)
+numpy
+scipy
+pyyaml
+matplotlib
+opencv-python
+open3d==0.19.0
+ompl==1.7.0
+git+https://github.com/ethz-asl/wavemap#subdirectory=library/python
