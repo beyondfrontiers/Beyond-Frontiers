@@ -1,8 +1,7 @@
 # Delta-Net — boundary scoring, inference only
 
 Self-contained. Give it a point cloud, get a per-point score saying how much
-each point looks like the **edge of observed space** rather than the interior
-of a surface, plus the direction the unobserved space lies in.
+each point looks like the **outside the learnt distribution**, plus the direction the unobserved space lies in.
 
 ```
 delta_net.py                      architecture, inference path only
