@@ -133,13 +133,16 @@ class ScagePipeline:
     def anomalous(self, raw=False):
         """The last scoring's anomalous points: (xyz, weight, probe, rows).
 
-        The probe is a step of probe_dist along Delta-Net's bearing, into the
-        unobserved space the point borders. The weight is the score, halved
-        (look_decay) for every frame that has already seen the point and past
-        it while it stayed anomalous: Delta-Net sees only points, so a physical
-        edge - a table rim, a door frame - looks like an observation boundary
-        and never resolves. Looking again would not change that. raw: the plain
-        score."""
+        The probe is a step of probe_dist along the predicted correction
+        direction, used as a visibility heuristic. The visibility test checks
+        both the point and its probe; passing it does not establish that a
+        later observation will resolve the anomaly.
+
+        The weight is the score multiplied by look_decay for each acquired
+        frame passing that test while the point remains anomalous, with the
+        exponent capped at 16. This reduces the priority of persistent
+        responses after repeated observations. raw=True returns the score
+        without this decay."""
         s = self.last.get("score")
         if s is None:
             return np.empty((0, 3)), np.empty(0), np.empty((0, 3)), np.empty(0, int)

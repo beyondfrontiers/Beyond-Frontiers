@@ -5,12 +5,12 @@ Each Delta-Net cluster gets its own target (scage.viewpoints). But a camera at
 one of them often sees other clusters too, and the targets of neighbouring
 clusters often sit nearly on top of each other. So:
 
-1. Coverage. For every candidate view, the anomalous points it would resolve
-   are raycast: the point itself and a probe probe_dist along its Delta-Net
-   bearing (into the unobserved space it points at) are both inside the image,
-   within see_range and not behind an obstacle (AnomalyManager.visible). Seeing
-   a rim without seeing past it does not resolve it. The view's anomaly mass S
-   is the summed score of those points times the 0.05 m cell area: anomalous
+1. Coverage. For every candidate view, a visibility heuristic checks each
+   anomalous point and a probe probe_dist along its predicted correction
+   direction. Both must be inside the image, within see_range and pass the
+   obstacle-depth test (AnomalyManager.visible). Passing this test does not
+   establish that the view will resolve the anomaly. The view's anomaly mass
+   S is the summed score of those points times the 0.05 m cell area: anomalous
    surface, in m^2, weighted by how anomalous.
 
 2. Clubbing. Views within group_trans and group_angle of each other form one

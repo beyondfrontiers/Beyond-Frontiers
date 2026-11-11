@@ -1,4 +1,7 @@
-"""Delta-Net, inference only, boundary task.
+"""Delta-Net, inference only: per-point denoising displacements.
+
+The model is trained with a Chamfer-denoising objective. Displacement
+magnitudes provide anomaly responses during exploration.
 
 Identical architecture and weights to the trained model (6,983,171 params);
 the training-only branches and the other two task heads have been stripped so
@@ -90,16 +93,14 @@ class PTv3NoSkip(PointTransformerV3):
 
 
 class DeltaNet(nn.Module):
-    """Per-point 3-vector regressor.
+    """Per-point denoising displacement predictor.
 
-    Output `delta` is  score * unit(void):
-        ||delta||     the boundary score in [0, 1] - how much this point looks
-                      like the edge of a surface rather than its interior
-        delta/||.||   the outward bearing, pointing away from the observed
-                      surface into the unobserved space
+    Output `delta` is a 3D correction vector for each input point. Its
+    magnitude provides a raw anomaly response during exploration; its
+    normalized vector, when nonzero, is the predicted correction direction.
 
-    The head is applied to decoder features; `delta_scale` is 1.0 for this
-    task, so the head output is the prediction in score units directly.
+    The head is applied to decoder features and its output is multiplied by
+    `delta_scale` (default 1.0).
     """
 
     def __init__(self, backbone=None, head_hidden=64, delta_scale=1.0):

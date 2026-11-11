@@ -91,12 +91,12 @@ concatenation plus a cumulative-sum `offset`, not a padded tensor.
 
 ## What comes out
 
-One 3-vector per point, `delta`:
+One denoising displacement vector per point, `delta`, learned with a Chamfer-denoising objective:
 
 | | |
 |---|---|
-| `‖delta‖` | boundary score in [0, 1] — how much this point is an edge |
-| `delta/‖delta‖` | outward bearing, away from the surface into unobserved space |
+| `‖delta‖` | raw correction magnitude, used as an anomaly response during exploration; not constrained to [0, 1] |
+| `delta/‖delta‖` | predicted correction direction for nonzero displacements |
 
 The score is **not** rescaled by the 2.0 — only the input coordinates were,
 and the target was always in score units.

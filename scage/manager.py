@@ -458,7 +458,10 @@ class AnomalyManager:
         not yet free or occupied in Wavemap. poses: (N,4,4) W_T_C.
 
         The frustum is sampled on a gain_voxel grid and each sample is looked
-        up in Wavemap's cells, so the cost does not grow with the map."""
+        up in Wavemap's cells. For fixed camera and grid settings, the number
+        of frustum samples is bounded independently of map size. Overall
+        computation still depends on map size, including obstacle rendering
+        over the accumulated geometry."""
         poses = np.asarray(poses, float).reshape(-1, 4, 4)
         if len(poses) == 0:
             return np.zeros(0)

@@ -10,10 +10,12 @@ exactly what it was validated on. What is added here:
   around newly added points.
 - `minmax`: the paper's Eq. 2 global normalisation, as an option.
 
-Units: ||delta|| is the score, already in [0, 1]. Only the input coordinates
-are divided by NORM_SCALE (inside prepare_patch); nothing is multiplied back
-on the way out. The bearing is normalised explicitly - the raw vector carries
-the score in its length.
+The raw score is ||delta||, the predicted correction magnitude, with no
+enforced upper bound. Optional minmax normalization maps the aggregated
+scores to [0, 1]; clipping in the display colour map affects visualization
+only. Input coordinates are divided by NORM_SCALE (inside prepare_patch),
+and the raw output is used without inverse rescaling. The predicted
+correction direction is normalized explicitly.
 """
 
 import os
